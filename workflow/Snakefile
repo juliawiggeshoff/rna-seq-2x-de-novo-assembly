@@ -1,0 +1,212 @@
+import pandas as pd
+
+report: "report/workflow.rst"
+
+samples_df=pd.read_table(config["sample_info"], dtype=str, index_col="Species_name")
+samples_dict=samples_df.to_dict()
+
+def get_fwd_file(wildcards):
+    return "resources/raw_data/" + samples_dict["Forward"][wildcards.species]
+
+def get_rev_file(wildcards):
+    return "resources/raw_data/" + samples_dict["Reverse"][wildcards.species]
+
+suffixes=["fwd_paired", "rev_paired", "fwd_unpaired", "rev_unpaired"]
+assemblers=["Shannon", "Trinity"]
+
+rule all:
+    input:
+        expand("results/fastqc/pre-trim/{species}_fwd_fastqc.html", species=list(samples_df.index)),
+        expand("results/fastqc/pre-trim/{species}_fwd_fastqc.zip", species=list(samples_df.index)),
+        expand("results/fastqc/pre-trim/{species}_rev_fastqc.html", species=list(samples_df.index)),
+        expand("results/fastqc/pre-trim/{species}_rev_fastqc.zip", species=list(samples_df.index)),
+        expand("results/fastqc/post-trim/{species}_trimmed_{suffix}_fastqc.html", species=list(samples_df.index), suffix=suffixes),
+        expand("results/fastqc/post-trim/{species}_trimmed_{suffix}_fastqc.zip", species=list(samples_df.index), suffix=suffixes),
+        expand("results/busco/report/{species}/copy.{lineage}_{species}.{assembler}.done", species=list(samples_df.index), assembler=assemblers,lineage=config["lineage"]),
+        expand("results/busco/report/{species}/busco_figure_{species}.png", species=list(samples_df.index))
+
+rule raw_fastqc:
+    input:
+        fwd=get_fwd_file,
+        rev=get_rev_file
+    output:
+        fwd_html=report(
+            "results/fastqc/pre-trim/{species}_fwd_fastqc.html",
+            caption="report/fastqc_results.rst",
+            category="FASTQC",
+            subcategory="Pre-trimming",
+            labels={"Species": "{species}", "Read Type": "fwd_paired", "Type": "Plot and Table"}),
+        fwd_zip="results/fastqc/pre-trim/{species}_fwd_fastqc.zip",
+        rev_html=report(
+            "results/fastqc/pre-trim/{species}_rev_fastqc.html",
+            caption="report/fastqc_results.rst",
+            category="FASTQC",
+            subcategory="Pre-trimming",
+            labels={"Species": "{species}", "Read Type": "rev_paired", "Type": "Plot and Table"}),
+        rev_zip="results/fastqc/pre-trim/{species}_rev_fastqc.zip"
+    threads: workflow.cores * 0.1
+    log:
+        log_fwd="results/logs/raw_fastc/{species}_raw_fwd_fastqc.log",
+        log_rev="results/logs/raw_fastc/{species}_raw_rev_fastqc.log"
+    conda:
+        "envs/env_fastqc.yaml"
+    shell:
+        """
+        zcat {input.fwd} | fastqc stdin:{wildcards.species}_fwd -o results/fastqc/pre-trim/ -t {threads} &> {log.log_fwd}
+        zcat {input.rev} | fastqc stdin:{wildcards.species}_rev -o results/fastqc/pre-trim/ -t {threads} &> {log.log_rev}
+        """
+
+rule trim_reads:
+    input:
+        fwd=get_fwd_file,
+        rev=get_rev_file
+    output:
+        fwd_p="results/trimmed/{species}_trimmed_fwd_paired.fastq.gz",
+        fwd_u="results/trimmed/{species}_trimmed_fwd_unpaired.fastq.gz",
+        rev_p="results/trimmed/{species}_trimmed_rev_paired.fastq.gz",
+        rev_u="results/trimmed/{species}_trimmed_rev_unpaired.fastq.gz"
+    params:
+        clip="\"ILLUMINACLIP:",
+        adapter=config["adapter"],
+        trim_params=":2:30:9:1:true\"",
+        info_len="MAXINFO:80:0.5 MINLEN:80"
+    threads: workflow.cores * 0.2
+    log:
+        "results/logs/trim_reads/{species}_trim_reads.log"
+    conda: 
+        "envs/env_trimmomatic.yaml"
+    shell:
+        "trimmomatic PE -threads {threads} -phred33 {input.fwd} {input.rev} {output.fwd_p} {output.fwd_u} {output.rev_p} {output.rev_u} {params.clip}{params.adapter}{params.trim_params} {params.info_len} &> {log}"
+
+rule trimmed_fastqc:
+    input:
+        "results/trimmed/{species}_trimmed_{suffix}.fastq.gz"
+    output:
+        report(
+            "results/fastqc/post-trim/{species}_trimmed_{suffix}_fastqc.html",
+            caption="report/fastqc_results.rst",
+            category="FASTQC",
+            subcategory="Post-trimming",
+            labels={"Species": "{species}", "Read Type": "{suffix}", "Type": "Plot and Table"}),
+        "results/fastqc/post-trim/{species}_trimmed_{suffix}_fastqc.zip"
+    threads: workflow.cores * 0.1
+    log:
+        "results/logs/trimmed_fastqc/{species}_trimmed_{suffix}_fastqc.log"
+    conda:
+        "envs/env_fastqc.yaml"
+    shell:
+       "zcat {input} | fastqc stdin:{wildcards.species}_trimmed_{wildcards.suffix} -o results/fastqc/post-trim/ -t {threads} &> {log}"
+
+rule gunzip_trimmed_reads:
+    input:
+        fwd_p="results/trimmed/{species}_trimmed_fwd_paired.fastq.gz",
+        rev_p="results/trimmed/{species}_trimmed_rev_paired.fastq.gz"
+    output:
+        fwd_p_uncomp=temp("results/trimmed/uncompressed/{species}_trimmed_fwd_paired.fastq"),
+        rev_p_uncomp=temp("results/trimmed/uncompressed/{species}_trimmed_rev_paired.fastq")
+    log:
+        "results/logs/gunzip_trimmed_reads/{species}_trimmed_paired.log"
+    shell:
+        """
+        gunzip -q {input.fwd_p} --stdout > {output.fwd_p_uncomp}
+        gunzip -q {input.rev_p} --stdout > {output.rev_p_uncomp}
+        """
+
+rule shannon_assembly:
+    input:
+        fwd_p_uncomp="results/trimmed/uncompressed/{species}_trimmed_fwd_paired.fastq",
+        rev_p_uncomp="results/trimmed/uncompressed/{species}_trimmed_rev_paired.fastq"
+    output:
+        outfile_busco="results/busco/input/Shannon_{species}.fasta"
+    threads: workflow.cores * 0.3
+    log:
+        "results/logs/assembly/Shannon_{species}.log"
+    params:
+        outdir_shannon="results/assembly/Shannon/{species}"
+    conda:
+        "envs/env_shannon.yaml"
+    shell:
+        "(mkdir -p results/assembly/Shannon; shannon.py -o {params.outdir_shannon} --left {input.fwd_p_uncomp} --right {input.rev_p_uncomp} -p {threads}; "
+        "sleep 100; cp {params.outdir_shannon}/shannon.fasta {output.outfile_busco}) &> {log}"
+
+rule trinity_assembly:
+    input:
+        fwd=get_fwd_file,
+        rev=get_rev_file
+    output:
+        outfile_busco="results/busco/input/Trinity_{species}.fasta"
+    params:
+        clip="\"ILLUMINACLIP:",
+        adapter=config["adapter"],
+        trim_params=":2:30:9:1:true\"",
+        max_mem=config["max_memory"],
+        outdir_trinity="results/assembly/Trinity/trinity_out_dir_{species}"
+    threads: workflow.cores * 0.3
+    log:
+        "results/logs/assembly/Trinity_{species}.log"
+    conda:
+        "envs/env_trinity.yaml"
+    shell:
+        "(Trinity --seqType fq --left {input.fwd} --right {input.rev} --CPU {threads} --SS_lib_type FR "
+        "--max_memory {params.max_mem} --trimmomatic --quality_trimming_params {params.clip}{params.adapter}{params.trim_params} --output {params.outdir_trinity}; "
+        "sleep 100; cp {params.outdir_trinity}/Trinity.fasta {output.outfile_busco}) &> {log}"
+
+checkpoint busco:
+    input:
+        "results/busco/input/{assembler}_{species}.fasta"
+    params:
+        mode="transcriptome",
+        down_path="resources/busco_downloads/",
+        busco_out_dir="results/busco/output/{assembler}/{species}/",
+        busco_report_in_dir="results/busco/report/{species}/",
+        short_summary_specific="results/busco/output/{assembler}/{species}/short_summary.specific.{lineage}.{species}.txt"
+    output:
+        mod_name_short_summary_specific="results/busco/report/{species}/short_summary.specific.{lineage}_{species}.{assembler}.txt"
+    threads: workflow.cores * 0.3
+    log:
+        "results/logs/busco/{assembler}_{species}_busco_{lineage}.log"
+    conda:
+        "envs/env_busco.yaml"
+    shell:
+        "(busco -m {params.mode} -i {input} -o {params.busco_out_dir} -l {wildcards.lineage} -c {threads} -f --offline --download_path {params.down_path}; "
+        "sleep 100; mkdir -p {params.busco_report_in_dir}; cp {params.short_summary_specific} {output.mod_name_short_summary_specific}) &> {log}"
+
+def busco_report_cp_flag_input(wildcards):
+    checkpoint_output = checkpoints.busco.get(**wildcards).output.mod_name_short_summary_specific
+    return checkpoint_output
+
+rule busco_report_cp_flag:
+    input:
+        busco_report_cp_flag_input
+    params:
+        flag_file="copy.{lineage}_{species}.{assembler}.done"
+    output:
+        abspath_flag_file=touch("results/busco/report/{species}/copy.{lineage}_{species}.{assembler}.done")
+    shell:
+        "ls {input}; echo {params.flag_file}"
+
+rule busco_report_table_flag:
+    input:
+        expand("results/busco/report/{species}/copy.{lineage}_{species}.{assembler}.done", species=list(samples_df.index), assembler=assemblers, lineage=config["lineage"])
+    output:
+        ensure("results/busco/report/all_tables.done", non_empty=True)
+    shell:
+        "ls {input} > {output}"
+
+rule busco_report:
+    input:
+        "results/busco/report/all_tables.done"
+    params:
+        in_dir="results/busco/report/{species}"
+    output:
+        report(
+            "results/busco/report/{species}/busco_figure_{species}.png",
+            caption="report/busco_figure.rst",
+            category="BUSCO Report",
+            labels={"Species": "{species}", "Type": "Plot"})
+    log:
+        "results/logs/busco/busco_{species}_report.log"
+    conda:
+        "envs/env_busco.yaml"
+    shell:
+        "(generate_plot.py -wd {params.in_dir}; sleep 100; mv {params.in_dir}/busco_figure.png {output}) &> {log}"
