@@ -14,6 +14,8 @@ def get_rev_file(wildcards):
 suffixes=["fwd_paired", "rev_paired", "fwd_unpaired", "rev_unpaired"]
 assemblers=["Shannon", "Trinity"]
 
+localrules: all, busco
+
 rule all:
     input:
         expand("results/fastqc/pre-trim/{species}_fwd_fastqc.html", species=list(samples_df.index)),
@@ -168,7 +170,7 @@ checkpoint busco:
     conda:
         "envs/env_busco.yaml"
     shell:
-        "(busco -m {params.mode} -i {input} -o {params.busco_out_dir} -l {wildcards.lineage} -c {threads} -f --offline --download_path {params.down_path}; "
+        "(busco -m {params.mode} -i {input} -o {params.busco_out_dir} -l {wildcards.lineage} -c {threads} -f --download_path {params.down_path}; "
         "sleep 100; mkdir -p {params.busco_report_in_dir}; cp {params.short_summary_specific} {output.mod_name_short_summary_specific}) &> {log}"
 
 def busco_report_cp_flag_input(wildcards):
