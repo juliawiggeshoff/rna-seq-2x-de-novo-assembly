@@ -5,7 +5,7 @@ Workflow to quality-check RNA-Seq data prior to and post trimming with Trimmomat
 ## System requirements
 ### Local machine
 - If you don't have it yet, it is necessary to have conda or miniconda in your machine.
-Follow [this](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html) instructions.
+Follow [there](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html) instructions.
 	- I highly (**highly!**) recommend installing a much much faster package manager to replace conda, [mamba](https://github.com/mamba-org/mamba)
 	- In you command-line, type:
 	`conda install -n base -c conda-forge mamba` 
@@ -20,7 +20,7 @@ For example, with the cluster I work with, we use modules to set up environmenta
 e.g.:
 `module load anaconda3/2022.05`
 
-You usually don't have sudo rights to install anything to the root of the cluster. So, as I wanted to work with both a more updated distribution of conda and especially use mamba to replace conda as a package manager, I had to first create my own "local" conda, i.e. I first loaded the module and then created a new environment I called localconda 
+You usually don't have sudo rights to install anything to the root of the cluster. So, as I wanted to work with a more updated distribution of conda and especially use mamba to replace conda as a package manager, I had to first create my own "local" conda, i.e. I first loaded the module and then created a new environment I called localconda 
 1. `module load anaconda3/2022.05`
 2. `conda create -n localconda -c conda-forge conda=22.9.0`
 3. `conda activate localconda`
@@ -28,12 +28,6 @@ You usually don't have sudo rights to install anything to the root of the cluste
 
 If you run `conda env list` you'll probably see something like this:
 `/home/myusername/.conda/envs/localconda/`
-After the installation step is done and you run `conda
-
-NOTE: after this, I have to also install mamba in snakefront to make it work in the cluster…. I modified the environment.yaml from the snakefront pipeline to now include the mamba installation from the get-go
-
-
-conda env list
 
 ## Installation 
 
@@ -45,15 +39,15 @@ conda env list
 
 `coda activate base`
 
-- If you are working on a cluster or have your own "local", isolated environment you want to activate instead (see []()), use its name to activate it
+- If you are working on a cluster or have your own "local", isolated environment you want to activate instead (see [here](https://gitlab.leibniz-lib.de/jwiggeshoff/rna-seq-to-busco#hpc-system)), use its name to activate it
 
 `conda activate localconda`
 
-3. Install rna-seq-to-busco into an isolated software environment by navigating to the directory where this repo is and run:
+3. Install **rna-seq-to-busco** into an isolated software environment by navigating to the directory where this repo is and run:
 
 `conda env create --file environment.yaml`
 
-If you followed what I recommended in the [System requirements](https://gitlab.leibniz-lib.de/jwiggeshoff/rna-seq-to-busco#system-requirements), run this intead:
+If you followed what I recommended in the [System requirements](https://gitlab.leibniz-lib.de/jwiggeshoff/rna-seq-to-busco#local-machine), run this intead:
 
 `mamba env create --file environment.yaml`
 
@@ -71,10 +65,11 @@ If you are on a cluster and/or created the environment "within" another environm
 
 You will probably see something like this among your enviornments:
 
-`conda activate /home/myusername/.conda/envs/localconda/envs/rna-seq-to-busco`
+`home/myusername/.conda/envs/localconda/envs/rna-seq-to-busco`
 
 From no own, you have to give this full path when activating the environment prior to running the workflow
 
+`conda activate /home/myusername/.conda/envs/localconda/envs/rna-seq-to-busco`
 
 ## Data requirements
 
@@ -82,13 +77,33 @@ From no own, you have to give this full path when activating the environment pri
 
 Move your RNA-Seq data into `resources/raw_data`
 
-Note: Right now, the workflow only works with species which have paires-end reads. This will modified later. Likewise, a system to automate the SRA data download from NCBI will be implemented
+**Note**: Right now, the workflow only works with species which have paires-end reads. This will modified later. Likewise, a system to automate the SRA data download from NCBI will be implemented
 
-2. Species table
+2. Tab-separates, species table
 
-A template table 
+Template table provided in `config/species_table.tsv`. Modify following the name of your species and the filenames from the paired-end reads.
+
+This is important not only to know how the raw data is named, but also to write the names of the files in meaninful ways, i.e. HW03_Berthella_plumula.fasta instead of something like SRR8573930.fasta. Also really important for the final graph from busco report.
+
+**Important**:
+- **No cell can be empty**, as Snakemake will see this as missing input file and the analyses will not run
+- **Never modify the headers** from the table otherwise the same thing will happen
+- The names of the forward and reverse files have to be the same as the actual files you copied into `resources/raw_data`
+
+|Species_name|Forward|Reverse|
+| ------ | ------ || ------ |
+|HW03_Berthella_plumula|SRR8573930_1.fastq.gz|SRR8573930_2.fastq.gz|
 
 3. Config file
+
+Template found in `config/configfile.yaml`. Modify accordingly.
+Required file for important settings from the analyses. Workflow will fail if anything is wrong or missing.
+
+- sample_info: you can keep this path, but remember to modify the information according to your samples (See previous step in the data requirements)
+- max_memory: max amount of memory Trinity assembler can use
+- adapter: adpater file used by Trimmomatic. You can provide a custom adapter file, like is the case in the template file, or the name from one of the Fasta files supplied by Trimmomatic. The most common one is TruSeq3-PE.fa, as it is used for by HiSeq and
+MiSeq machines. See page 12 from the [Trimmomatic manual](http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/TrimmomaticManual_V0.32.pdf) for more information.
+- lineage: clade-specific information to identify BUSCO genes in the transcripts. Click [here](https://busco-data.ezlab.org/v5/data/lineages/) for all BUSCO lineages.
 
 # Starting the workflow
 
@@ -102,7 +117,7 @@ or
 
 ## Local machine
 
-**Not recommended** if you don't have a lot of storage and CPUs available. Nevertheless, you can simply run like this:
+**Not recommended** if you don't have a lot of storage and CPUs available (and time to wait...). Nevertheless, you can simply run like this:
 
 `nohup snakemake --keep-going --use-conda --verbose --printshellcmds --reason --nolock --cores 11 > nohup_$(date +"%F_%H").out &`
 
@@ -112,10 +127,10 @@ Two working options were tested to run the workflow in HPC clusters using the Su
 
 ### Before the first execution of the workflow
 
-Run to create the environments from the rules:
+Run this to create the environments from the rules:
 
 `snakemake --cores 8 --use-conda --conda-create-envs-only`
- 
+
 ### Option 1:
 
 `nohup snakemake --keep-going --use-conda --verbose --printshellcmds --reason --nolock --jobs 15 --cores 31 --local-cores 15 --max-threads 25 --cluster "qsub -V -b y -j y -o snakejob_logs/ -cwd -q fast.q,small.q,medium.q,large.q -M user.email@gmail.com -m be" > nohup_$(date +"%F_%H").out &`
