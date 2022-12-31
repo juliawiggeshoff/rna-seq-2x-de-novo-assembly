@@ -91,7 +91,7 @@ This is important not only to know how the raw data is named, but also to write 
 - The names of the forward and reverse files have to be the same as the actual files you copied into `resources/raw_data`
 
 |Species_name|Forward|Reverse|
-| ------ | ------ || ------ |
+|--|--|--|
 |HW03_Berthella_plumula|SRR8573930_1.fastq.gz|SRR8573930_2.fastq.gz|
 
 3. Config file
