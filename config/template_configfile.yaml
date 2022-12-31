@@ -1,8 +1,0 @@
-sample_info:
-  "config/species_table.tsv"
-max_memory:
-  "100G"
-adapter:
-  "resources/Dario_custom_adapters.fa"
-lineage:
-  "mollusca_odb10"
