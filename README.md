@@ -4,6 +4,7 @@ Workflow to quality-check RNA-Seq data prior to and post trimming with Trimmomat
 
 ## System requirements
 ### Local machine
+
 - If you don't have it yet, it is necessary to have conda or miniconda in your machine.
 Follow [there](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html) instructions.
 	- I highly (**highly!**) recommend installing a much much faster package manager to replace conda, [mamba](https://github.com/mamba-org/mamba)
@@ -93,6 +94,7 @@ This is important not only to know how the raw data is named, but also to write 
 |Species_name|Forward|Reverse|
 |--|--|--|
 |HW03_Berthella_plumula|SRR8573930_1.fastq.gz|SRR8573930_2.fastq.gz|
+|My_species|Myspecies_S1_L001_R1_001.fastq.gz|Myspecies_S1_L001_R2_001.fastq.gz|
 
 3. Config file
 
