@@ -125,15 +125,19 @@ or
 
 `nohup snakemake --keep-going --use-conda --verbose --printshellcmds --reason --nolock --cores 11 > nohup_$(date +"%F_%H").out &`
 
+Modify number of cores accordingly.
+
 ## HPC system
 
-Two working options were tested to run the workflow in HPC clusters using the Sun Grid Engine (SGE) queue scheduler system
+This option was tested to run the workflow in HPC clusters using the Sun Grid Engine (SGE) queue scheduler system. For other systems, read more [here](https://snakemake.readthedocs.io/en/stable/executing/cluster.html).
 
 ### Before the first execution of the workflow
 
 Run this to create the environments from the rules:
 
 `snakemake --cores 8 --use-conda --conda-create-envs-only`
+
+Then:
 
 `nohup snakemake --keep-going --use-conda --verbose --printshellcmds --reason --nolock --jobs 15 --cores 31 --local-cores 15 --max-threads 25 --cluster "qsub -V -b y -j y -o snakejob_logs/ -cwd -q fast.q,small.q,medium.q,large.q -M user.email@gmail.com -m be" > nohup_$(date +"%F_%H").out &`
 
