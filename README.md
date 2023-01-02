@@ -135,8 +135,6 @@ Run this to create the environments from the rules:
 
 `snakemake --cores 8 --use-conda --conda-create-envs-only`
 
-### Option 1:
-
 `nohup snakemake --keep-going --use-conda --verbose --printshellcmds --reason --nolock --jobs 15 --cores 31 --local-cores 15 --max-threads 25 --cluster "qsub -V -b y -j y -o snakejob_logs/ -cwd -q fast.q,small.q,medium.q,large.q -M user.email@gmail.com -m be" > nohup_$(date +"%F_%H").out &`
 
 Remember to:
