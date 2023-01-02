@@ -1,6 +1,8 @@
-# Rna-Seq to BUSCO - Workflow
+# RNA-Seq to BUSCO - Workflow
 
 Workflow to quality-check RNA-Seq data prior to and post trimming with Trimmomatic. Reads are assembled with two *de novo* transcriptome assemblers, Trinity and Shannon, but more will be added soon. BUSCO is used to annotate and benchmark the assemblies.
+
+To be implemented: Inclusion of tool to select the best annotated assembly based on the results from BUSCO, [Ortho-Overlap](https://gitlab.leibniz-lib.de/jwiggeshoff/ortho-overlap).
 
 ## System requirements
 ### Local machine
@@ -142,31 +144,6 @@ Remember to:
 2. Modify *user.email@gmail.com*
 3. Change values for --jobs, --cores, --local-cores, and --max-threads accordingly 
 	- Important: Make sure you set a low value for --local-cores to not take up too much resources from your host node
-
-### Option 2:
-
-A template jobscript `template_run_rna-seq-to-busco.sh` is found under `misc/`
-
-**Important:** Please, modify the qsub options according to your system! 
-Features to modify:
-- E-mail address: -M *user.email@gmail.com*
-- Mailing settings, if needed: -m *be*
-- If you  want to to join (write) stderr to stdout, use -j y instead and delete the line for -e, just keepig the option -o
-- If you want to, the name of the jobscript: -N *rna-seq-to-busco*
-- **Name of parallel environment (PE) as well as the number of maximum threads to use:** -pe *smp 31*
-- **Queue name!** (extremely unique to your system): -q *small.q,medium.q,large.q*
-
-Ater modifying the template, copy it (while also modifying its name) to the working directory:
-
-If you are within the folder `misc/`:
-
-`cp template_run_rna-seq-to-busco.sh ../run_rna-seq-to-busco.sh`
-
-You should see within the path where the folders config/, resources/, results/, and workflow/ are, together with files README.md and environment.yaml
-
-Finally, run:
-
-`qsub run_rna-seq-to-busco.sh`
 
 # Finishing the analyses: generating the report
 
