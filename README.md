@@ -7,6 +7,8 @@ To be implemented: Inclusion of tool to select the best annotated assembly based
 # System requirements
 ## Local machine
 
+I recommend running the workflow on HPC clusters, as the analyses are resource and time consuming.
+
 - If you don't have it yet, it is necessary to have conda or miniconda in your machine.
 Follow [there](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html) instructions.
 	- I highly (**highly!**) recommend installing a much much faster package manager to replace conda, [mamba](https://github.com/mamba-org/mamba)
