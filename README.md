@@ -77,7 +77,7 @@ MiSeq machines. See page 12 from the [Trimmomatic manual](http://www.usadellab.o
 
 2. Activate your conda base
 
-`coda activate base`
+`conda activate base`
 
 - If you are working on a cluster or have your own "local", isolated environment you want to activate instead (see [here](https://gitlab.leibniz-lib.de/jwiggeshoff/rna-seq-to-busco#hpc-system)), use its name to activate it
 
