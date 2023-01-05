@@ -212,3 +212,14 @@ rule busco_report:
         "envs/env_busco.yaml"
     shell:
         "(generate_plot.py -wd {params.in_dir}; sleep 100; mv {params.in_dir}/busco_figure.png {output}) &> {log}"
+
+onsuccess:
+    print("Workflow finished, no error!")
+    print("Generating report...")
+    shell("snakemake --report report.zip --configfile {workflow.configfiles}")
+    print("Done!")
+
+onerror:
+    print("An error occurred!")
+    print("See the log file for more details:")
+    print("{log}")
