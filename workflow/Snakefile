@@ -222,4 +222,3 @@ onsuccess:
 onerror:
     print("An error occurred!")
     print("See the log file for more details:")
-    print("{log}")
