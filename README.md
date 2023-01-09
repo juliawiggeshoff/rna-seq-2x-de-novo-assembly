@@ -12,9 +12,11 @@ I recommend running the workflow on a HPC system, as the analyses are resource a
 - If you don't have it yet, it is necessary to have conda or miniconda in your machine.
 Follow [there](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html) instructions.
 	- After you are all set with conda, I highly (**highly!**) recommend installing a much much faster package manager to replace conda, [mamba](https://github.com/mamba-org/mamba)
-		- First activate your conda base
+		- First activate your conda base:
+
 		`conda activate base`
 		- Then, type:
+		
 		`conda install -n base -c conda-forge mamba` 
 
 - Likewise, follow [this](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) tutorial to install Git if you don't have it.
