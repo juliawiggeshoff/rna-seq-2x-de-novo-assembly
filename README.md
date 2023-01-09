@@ -14,7 +14,7 @@ Follow [there](https://conda.io/projects/conda/en/latest/user-guide/install/linu
 	- After you are all set with conda, I highly (**highly!**) recommend installing a much much faster package manager to replace conda, [mamba](https://github.com/mamba-org/mamba)
 		- First activate your conda base
 		`conda activate base`
-		-Then, type:
+		- Then, type:
 		`conda install -n base -c conda-forge mamba` 
 
 - Likewise, follow [this](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) tutorial to install Git if you don't have it.
@@ -144,7 +144,7 @@ Run this to create the environments from the rules:
 
 Then:
 
-`nohup snakemake --keep-going --use-conda --verbose --printshellcmds --reason --nolock --jobs 15 --cores 31 --local-cores 15 --max-threads 25 --cluster "qsub -V -b y -j y -o snakejob_logs/ -cwd -q fast.q,small.q,medium.q,large.q -M user.email@gmail.com -m be" > nohup_$(date +"%F_%H").out &`
+`nohup snakemake --configfile config/configfile.yaml --keep-going --use-conda --verbose --printshellcmds --reason --nolock --jobs 15 --cores 31 --local-cores 15 --max-threads 25 --cluster "qsub -V -b y -j y -o snakejob_logs/ -cwd -q fast.q,small.q,medium.q,large.q -M user.email@gmail.com -m be" > nohup_rna-seq-to-busco_$(date +"%F_%H").out &`
 
 Remember to:
 1. Create snakejob_logs in the working directory: `mkdir -p snakejob_logs`
