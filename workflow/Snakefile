@@ -170,7 +170,8 @@ checkpoint busco:
     conda:
         "envs/env_busco.yaml"
     shell:
-        "(busco -m {params.mode} -i {input} -o {params.busco_out_dir} -l {wildcards.lineage} -c {threads} -f --download_path {params.down_path}; "
+        "(export PATH=$CONDA_PREFIX/bin:$PATH; "
+        "busco -m {params.mode} -i {input} -o {params.busco_out_dir} -l {wildcards.lineage} -c {threads} -f --download_path {params.down_path}; "
         "sleep 100; mkdir -p {params.busco_report_in_dir}; cp {params.short_summary_specific} {output.mod_name_short_summary_specific}) &> {log}"
 
 def busco_report_cp_flag_input(wildcards):
@@ -211,7 +212,8 @@ rule busco_report:
     conda:
         "envs/env_busco.yaml"
     shell:
-        "(generate_plot.py -wd {params.in_dir}; sleep 100; mv {params.in_dir}/busco_figure.png {output}) &> {log}"
+        "(export PATH=$CONDA_PREFIX/bin:$PATH; "
+        "generate_plot.py -wd {params.in_dir}; sleep 100; mv {params.in_dir}/busco_figure.png {output}) &> {log}"
 
 onsuccess:
     print("Workflow finished, no error!")
