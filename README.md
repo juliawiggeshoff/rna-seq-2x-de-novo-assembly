@@ -146,7 +146,7 @@ Run this to create the environments from the rules:
 
 Then:
 
-`nohup snakemake --configfile config/configfile.yaml --keep-going --use-conda --verbose --printshellcmds --reason --nolock --rerun-incomplete --jobs 15 --cores 31 --local-cores 15 --max-threads 25 --cluster "qsub -V -b y -j y -o snakejob_logs/ -cwd -q fast.q,small.q,medium.q,large.q -M user.email@gmail.com -m be" > nohup_rna-seq-to-busco_$(date +"%F_%H_%M_%S").out &`
+`nohup snakemake --configfile config/configfile.yaml --keep-going --use-conda --verbose --printshellcmds --reason --nolock --rerun-incomplete --jobs 15 --cores 41 --local-cores 15 --max-threads 25 --cluster "qsub -terse -V -b y -j y -o snakejob_logs/ -cwd -q fast.q,small.q,medium.q,large.q -M user.email@gmail.com -m be -pe smp {threads}" --cluster-cancel "qdel" > nohup_rna-seq-to-busco_$(date +"%F_%H_%M_%S").out &`
 
 Remember to:
 1. Create snakejob_logs in the working directory: `mkdir -p snakejob_logs`
